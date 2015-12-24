@@ -252,7 +252,8 @@ namespace ts {
     }
 
     export function isAmbientModule(node: Node): boolean {
-        return node && node.kind === SyntaxKind.ModuleDeclaration && (<ModuleDeclaration>node).name.kind === SyntaxKind.StringLiteral;
+        return node && node.kind === SyntaxKind.ModuleDeclaration &&
+            ((<ModuleDeclaration>node).name.kind === SyntaxKind.StringLiteral || !!(node.flags & NodeFlags.GlobalAugmentation));
     }
 
     export function isExternalModuleAugmentation(node: Node): boolean {

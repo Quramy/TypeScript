@@ -378,7 +378,7 @@ namespace ts {
                 return;
             }
 
-            if (isNameOfGlobalAugmentation(moduleName)) {
+            if (isGlobalScopeAugmentation(moduleAugmentation)) {
                 mergeSymbolTable(globals, moduleAugmentation.symbol.exports);
             }
             else {
@@ -14183,12 +14183,12 @@ namespace ts {
                         // or
                         // - this augmentation was not merged with main definition of the module
                         //   error should already be reported so all errors in the body of augmentation can be ignored.
-                        const checkBody = isNameOfGlobalAugmentation(<LiteralExpression>node.name) || (getSymbolOfNode(node).flags & SymbolFlags.Merged);
+                        const augmentsGlobalScope = isGlobalScopeAugmentation(node);
+                        const checkBody = augmentsGlobalScope || (getSymbolOfNode(node).flags & SymbolFlags.Merged);
                         if (checkBody) {
-                            const globalAugmentation = isNameOfGlobalAugmentation(<LiteralExpression>node.name);
                             // body of ambient external module is always a module block
                             for (const statement of (<ModuleBlock>node.body).statements) {
-                                checkBodyOfModuleAugmentation(statement, globalAugmentation);
+                                checkBodyOfModuleAugmentation(statement, augmentsGlobalScope);
                             }
                         }
                     }
@@ -14207,10 +14207,8 @@ namespace ts {
             checkSourceElement(node.body);
         }
 
-        function isNameOfGlobalAugmentation(node: LiteralExpression): boolean {
-            // global augmentation
-            // TODO: fix to use 'declare global' syntax.
-            return node.text === "/";
+        function isGlobalScopeAugmentation(module: ModuleDeclaration): boolean {
+            return !!(module.flags & NodeFlags.GlobalAugmentation)
         }
 
         function checkBodyOfModuleAugmentation(node: Node, isGlobalAugmentation: boolean): void {
@@ -14450,7 +14448,7 @@ namespace ts {
             }
 
             const container = node.parent.kind === SyntaxKind.SourceFile ? <SourceFile>node.parent : <ModuleDeclaration>node.parent.parent;
-            if (container.kind === SyntaxKind.ModuleDeclaration && (<ModuleDeclaration>container).name.kind === SyntaxKind.Identifier) {
+            if (container.kind === SyntaxKind.ModuleDeclaration && !isAmbientModule(container)) {
                 error(node, Diagnostics.An_export_assignment_cannot_be_used_in_a_namespace);
                 return;
             }
