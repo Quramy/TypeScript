@@ -43,7 +43,43 @@ namespace ts {
 
         switch (moduleResolution) {
             case ModuleResolutionKind.NodeJs: return nodeModuleNameResolver(moduleName, containingFile, compilerOptions, host);
+            case ModuleResolutionKind.JSPM: return jspmModuleNameResolver(moduleName, containingFile, compilerOptions, host);
             case ModuleResolutionKind.Classic: return classicNameResolver(moduleName, containingFile, compilerOptions, host);
+        }
+    }
+
+    export function jspmModuleNameResolver(moduleName: string, containingFile: string, compilerOptions: CompilerOptions, host: ModuleResolutionHost): ResolvedModuleWithFailedLookupLocations {
+        const containingDirectory = getDirectoryPath(containingFile);
+        const supportedExtensions = getSupportedExtensions(compilerOptions);
+        if (getRootLength(moduleName) !== 0 || nameStartsWithDotSlashOrDotDotSlash(moduleName)) {
+            const failedLookupLocations: string[] = [];
+            const candidate = normalizePath(combinePaths(containingDirectory, moduleName));
+            let resolvedFileName = loadNodeModuleFromFile(supportedExtensions, candidate, failedLookupLocations, host);
+
+            if (resolvedFileName) {
+                return { resolvedModule: { resolvedFileName }, failedLookupLocations };
+            }
+
+            resolvedFileName = loadNodeModuleFromDirectory(supportedExtensions, candidate, failedLookupLocations, host);
+            return resolvedFileName
+                ? { resolvedModule: { resolvedFileName }, failedLookupLocations }
+                : { resolvedModule: undefined, failedLookupLocations };
+        }
+        else {
+            return loadModuleFromJSPMModules(moduleName, containingDirectory, host);
+        }
+    }
+
+    function loadModuleFromJSPMModules(moduleName: string, directory: string, host: ModuleResolutionHost): ResolvedModuleWithFailedLookupLocations {
+        var loader = sys.getJspmLoader();
+        var jspmNormalizedName = loader.normalizeSync(moduleName);
+        if (loader.defaultJSExtensions) jspmNormalizedName = jspmNormalizedName.replace(/\.js$/, '');
+        jspmNormalizedName = jspmNormalizedName.replace(/^\s*file:\/\//, '') + '.d.ts';
+        if (host.fileExists(jspmNormalizedName)) {
+            return {resolvedModule: {resolvedFileName: jspmNormalizedName, isExternalLibraryImport: true}, failedLookupLocations: []};
+        }
+        else {
+            return loadModuleFromNodeModules(moduleName, directory, host);
         }
     }
 

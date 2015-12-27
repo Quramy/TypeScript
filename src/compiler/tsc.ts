@@ -495,7 +495,7 @@ namespace ts {
             if (timerHandleForDirectoryChanges) {
                 clearTimeout(timerHandleForDirectoryChanges);
             }
-            timerHandleForDirectoryChanges = setTimeout(directoryChangeHandler, 250);
+            timerHandleForDirectoryChanges = setTimeout(<any>directoryChangeHandler, 250);
         }
 
         function directoryChangeHandler() {
@@ -517,7 +517,7 @@ namespace ts {
             if (timerHandleForRecompilation) {
                 clearTimeout(timerHandleForRecompilation);
             }
-            timerHandleForRecompilation = setTimeout(recompile, 250);
+            timerHandleForRecompilation = setTimeout(<any>recompile, 250);
         }
 
         function recompile() {

@@ -17,6 +17,7 @@ namespace ts {
         getExecutingFilePath(): string;
         getCurrentDirectory(): string;
         readDirectory(path: string, extension?: string, exclude?: string[]): string[];
+        getJspmLoader(): {normalizeSync: (moduleName: string) => string; defaultJSExtensions: boolean}
         getMemoryUsage?(): number;
         exit(exitCode?: number): void;
     }
@@ -210,6 +211,9 @@ namespace ts {
                     }
                     catch (e) {
                     }
+                },
+                getJspmLoader() {
+                    return null;
                 }
             };
         }
@@ -396,6 +400,14 @@ namespace ts {
                 }
             }
 
+            var jspmLoader: any;
+            function getJspmLoader() {
+                if (!jspmLoader) {
+                    jspmLoader = require('jspm').Loader();
+                }
+                return jspmLoader;
+            }
+
             return {
                 args: process.argv.slice(2),
                 newLine: _os.EOL,
@@ -459,6 +471,7 @@ namespace ts {
                     }
                     return process.memoryUsage().heapUsed;
                 },
+                getJspmLoader,
                 exit(exitCode?: number): void {
                     process.exit(exitCode);
                 }
@@ -491,6 +504,9 @@ namespace ts {
                 getExecutingFilePath: () => ChakraHost.executingFile,
                 getCurrentDirectory: () => ChakraHost.currentDirectory,
                 readDirectory: ChakraHost.readDirectory,
+                getJspmLoader() {
+                    return null;
+                },
                 exit: ChakraHost.quit,
             };
         }
