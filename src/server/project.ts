@@ -1,9 +1,16 @@
-﻿/// <reference path="..\services\services.ts" />
+/// <reference path="..\services\services.ts" />
 /// <reference path="utilities.ts"/>
 /// <reference path="scriptInfo.ts"/>
 /// <reference path="lsHost.ts"/>
 /// <reference path="typingsCache.ts"/>
 /// <reference path="builder.ts"/>
+
+interface LanguageServicePlugin {
+    getSemanticDiagnosticsFilter(fileName: string, previous: ts.Diagnostic[]): ts.Diagnostic[];
+    getCompletionsAtPosition(fileName: string, position: number): ts.CompletionInfo;
+}
+
+var NgLanguageServicePlugin = require("@angular/language-service")()["default"];
 
 namespace ts.server {
 
@@ -132,7 +139,24 @@ namespace ts.server {
         enableLanguageService() {
             const lsHost = new LSHost(this.projectService.host, this, this.projectService.cancellationToken);
             lsHost.setCompilationSettings(this.compilerOptions);
-            this.languageService = ts.createLanguageService(lsHost, this.documentRegistry);
+
+            const ls = ts.createLanguageService(lsHost, this.documentRegistry);
+            const nglsp = new NgLanguageServicePlugin({
+                host: lsHost,
+                service: ls,
+                registry: this.documentRegistry
+            }) as LanguageServicePlugin;
+            const completionFn = ls.getCompletionsAtPosition;
+            const samnticCheckFn = ls.getSemanticDiagnostics;
+            this.languageService = ls;
+            this.languageService.getCompletionsAtPosition = (filename: string, position: number) => {
+                const ngResult = nglsp.getCompletionsAtPosition(filename, position);
+                if (ngResult) return ngResult;
+                return completionFn(filename, position);
+            };
+            this.languageService.getSemanticDiagnostics = (fileName: string) => {
+                return nglsp.getSemanticDiagnosticsFilter(fileName, samnticCheckFn(fileName));
+            };
 
             this.lsHost = lsHost;
             this.languageServiceEnabled = true;

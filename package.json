@@ -28,6 +28,10 @@
     "engines": {
         "node": ">=0.8.0"
     },
+    "dependencies": {
+      "@angular/language-service": "^2.4.1",
+      "reflect-metadata": "^0.1.8"
+    },
     "devDependencies": {
         "@types/browserify": "latest",
         "@types/chai": "latest",
